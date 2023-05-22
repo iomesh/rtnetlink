@@ -29,6 +29,7 @@ impl AddressAddRequest {
         index: u32,
         address: IpAddr,
         prefix_len: u8,
+        label: Option<String>,
     ) -> Self {
         let mut message = AddressMessage::default();
 
@@ -46,6 +47,10 @@ impl AddressAddRequest {
             }
         } else {
             message.attributes.push(AddressAttribute::Address(address));
+
+            if let Some(l) = label {
+                message.attributes.push(AddressAttribute::Label(l));
+            }
 
             // for IPv4 the IFA_LOCAL address can be set to the same value as
             // IFA_ADDRESS
