@@ -120,29 +120,42 @@ impl AddressFilterBuilder {
             }
 
             if let Some(address) = self.address {
+                let mut is_match: bool = false;
+
                 for nla in msg.attributes.iter() {
                     if let Address(x) | Local(x) = nla {
                         if x == &address {
-                            return true;
+                            is_match = true;
+                            break;
                         }
                     } else if let Multicast(x) | Anycast(x) = nla {
                         if IpAddr::V6(*x) == address {
-                            return true;
+                            is_match = true;
+                            break;
                         }
                     }
                 }
-                return false;
+
+                if !is_match {
+                    return false;
+                }
             }
 
             if let Some(ref label) = self.label {
-                for nla in msg.nlas.iter() {
+                let mut is_match: bool = false;
+
+                for nla in msg.attributes.iter() {
                     if let Label(l) = nla {
                         if label == l {
-                            return true;
+                            is_match = true;
+                            break;
                         }
                     }
                 }
-                return false;
+
+                if !is_match {
+                    return false;
+                }
             }
 
             true
