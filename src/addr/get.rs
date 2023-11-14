@@ -71,6 +71,11 @@ impl AddressGetRequest {
         self.filter_builder.address = Some(address);
         self
     }
+
+    pub fn set_label_filter(mut self, label: &str) -> Self {
+        self.filter_builder.label = Some(label.to_string());
+        self
+    }
 }
 
 // The reason for having filters, is that we cannot retrieve addresses
@@ -84,6 +89,7 @@ struct AddressFilterBuilder {
     index: Option<u32>,
     address: Option<IpAddr>,
     prefix_len: Option<u8>,
+    label: Option<String>,
 }
 
 impl AddressFilterBuilder {
@@ -108,11 +114,13 @@ impl AddressFilterBuilder {
             }
 
             if let Some(address) = self.address {
+                let mut is_match: bool = false;
+
                 for nla in msg.nlas.iter() {
                     if let Unspec(x) | Address(x) | Local(x) | Multicast(x)
                     | Anycast(x) = nla
                     {
-                        let is_match = match address {
+                        is_match = match address {
                             IpAddr::V4(address) => {
                                 x[..] == address.octets()[..]
                             }
@@ -121,12 +129,33 @@ impl AddressFilterBuilder {
                             }
                         };
                         if is_match {
-                            return true;
+                            break;
                         }
                     }
                 }
-                return false;
+
+                if !is_match {
+                    return false;
+                }
             }
+
+            if let Some(ref label) = self.label {
+                let mut is_match: bool = false;
+
+                for nla in msg.nlas.iter() {
+                    if let Label(l) = nla {
+                        if label == l {
+                            is_match = true;
+                            break;
+                        }
+                    }
+                }
+
+                if !is_match {
+                    return false;
+                }
+            }
+
             true
         }
     }
